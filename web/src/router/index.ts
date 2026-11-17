@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSession } from '../composables/useSession'
+import { stopPlayback } from '../composables/usePlayer'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -28,6 +29,10 @@ router.beforeEach(async () => {
   const { state, probeSession } = useSession()
   if (!state.checked) await probeSession()
   return true
+})
+
+router.afterEach((to) => {
+  if (to.name === 'cover' || to.name === 'login') stopPlayback()
 })
 
 export default router

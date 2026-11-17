@@ -1,11 +1,13 @@
 import { reactive } from 'vue'
 import type { Track, PlayerStatus, PlayerInteraction } from '../api/types'
 import { previewUrl } from '../api'
-import { playerStatusText } from '../copy/messages'
+import { COPY, playerStatusText } from '../copy/messages'
+import { pushToast } from './useToast'
 import { clamp } from '../utils/format'
 
 /** 无 Go 后端时用可控模拟时钟代替真实音频，便于本机 dev 自测。 */
 const USE_MOCK = import.meta.env.VITE_API_MODE === 'mock'
+const DEFAULT_VOLUME = 0.5
 
 interface PlayerState {
   track: Track | null
@@ -32,9 +34,9 @@ export const state = reactive<PlayerState>({
   currentTime: 0,
   duration: 0,
   buffered: 0,
-  volume: 0.8,
+  volume: DEFAULT_VOLUME,
   muted: false,
-  lastVolume: 0.8,
+  lastVolume: DEFAULT_VOLUME,
   rangeSupported: true,
   errorCode: '',
 })
@@ -57,9 +59,9 @@ function resetState(): void {
   state.currentTime = 0
   state.duration = 0
   state.buffered = 0
-  state.volume = 0.8
+  state.volume = DEFAULT_VOLUME
   state.muted = false
-  state.lastVolume = 0.8
+  state.lastVolume = DEFAULT_VOLUME
   state.rangeSupported = true
   state.errorCode = ''
 }
@@ -104,14 +106,18 @@ function onEnded(): void {
 }
 function onAudioError(): void {
   if (switching) return
+  const track = state.track
+  const already = state.status === 'error'
   state.status = 'error'
   state.errorCode = 'PREVIEW_FAILED'
+  if (already || !track) return
+  pushToast(COPY.previewToast(track.name), 'error', COPY.previewToastDetail, 'top')
 }
 
 function ensureAudio(): HTMLAudioElement {
   if (audio) return audio
   const a = new Audio()
-  a.preload = 'metadata'
+  a.preload = 'auto'
   a.addEventListener('loadedmetadata', onLoadedMetadata)
   a.addEventListener('durationchange', onLoadedMetadata)
   a.addEventListener('timeupdate', onTimeUpdate)
@@ -180,7 +186,8 @@ export function playTrack(track: Track): void {
   switching = false
   void a.play().catch(() => {
     // 浏览器拒绝自动播放时保持 paused，由用户点击播放钮继续。
-    if (state.track?.sourceId === track.sourceId) state.status = 'paused'
+    if (state.track?.sourceId !== track.sourceId || state.status === 'error') return
+    state.status = 'paused'
   })
 }
 
@@ -257,7 +264,7 @@ export function setVolume(ratio: number): void {
 
 export function toggleMute(): void {
   if (state.muted) {
-    const v = state.lastVolume > 0 ? state.lastVolume : 0.8
+    const v = state.lastVolume > 0 ? state.lastVolume : DEFAULT_VOLUME
     state.muted = false
     state.volume = v
     if (audio) { audio.muted = false; audio.volume = v }

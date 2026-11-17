@@ -4,7 +4,7 @@ import type { AddState, Track, WaveStatus } from '../api/types'
 import { A11Y, COPY, playerStatusText } from '../copy/messages'
 import { coverGradient, formatTime } from '../utils/format'
 import { state as playerState, toggleAudition, retryPreview } from '../composables/usePlayer'
-import { states, add, retry } from '../composables/useAdd'
+import { states, requestAdd } from '../composables/useAdd'
 import WaveBars from './WaveBars.vue'
 import EqLamp from './EqLamp.vue'
 import AddButton from './AddButton.vue'
@@ -52,8 +52,8 @@ function onAudition(): void {
   }
   toggleAudition(props.track)
 }
-function onAdd(): void { void add(props.track) }
-function onRetry(): void { retry(props.track) }
+function onAdd(): void { void requestAdd(props.track) }
+function onRetry(): void { void requestAdd(props.track) }
 </script>
 
 <template>

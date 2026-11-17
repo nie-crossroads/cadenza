@@ -4,8 +4,7 @@ import { A11Y, COPY, qualityLabel } from '../copy/messages'
 import { coverGradient, formatTime, toPercent } from '../utils/format'
 import { sourceColor } from '../utils/group'
 import { usePlayer, playTrack, togglePlay, seek, setVolume, retryPreview } from '../composables/usePlayer'
-import { getAddState, add as addTrack, retry } from '../composables/useAdd'
-import { confirmAdd } from '../composables/useConfirm'
+import { getAddState, requestAdd } from '../composables/useAdd'
 import { useSession } from '../composables/useSession'
 import { useSearch } from '../composables/useSearch'
 import { useTheme } from '../composables/useTheme'
@@ -53,12 +52,7 @@ function onSeek(next: number): void {
 async function onAdd(): Promise<void> {
   const track = state.track
   if (!track) return
-  const phase = getAddState(track.sourceId).phase
-  if (phase === 'pending' || phase === 'success' || phase === 'duplicate') return
-  const ok = await confirmAdd(track.name)
-  if (!ok) return
-  if (phase === 'error') retry(track)
-  else void addTrack(track)
+  await requestAdd(track)
 }
 function mark(name: string): string {
   return Array.from(name.trim())[0] || '♪'
@@ -361,8 +355,8 @@ function mark(name: string): string {
     height: 58px;
     padding: 0 10px;
     border-radius: 14px;
-    border: 1px solid var(--line-2);
-    box-shadow: 0 -8px 30px -14px rgba(0, 0, 0, .9);
+    border: 1px solid var(--acc);
+    box-shadow: 0 0 0 4px var(--acc-soft);
     background: linear-gradient(180deg, var(--surface-2), var(--bg-1));
     text-align: left;
     overflow: visible;

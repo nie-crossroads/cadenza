@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import { useRoute, useRouter } from 'vue-router'
 import { A11Y, BRAND, COPY } from '../copy/messages'
 import { logout as apiLogout } from '../api'
-import { useSearch, setQuery, submitNow, clearSearch, resetSearch } from '../composables/useSearch'
+import { useSearch, setQuery, submitNow, clearSearch, resetSearch, ensureSource } from '../composables/useSearch'
 import { markAnonymous, useSession } from '../composables/useSession'
 import { stopPlayback } from '../composables/usePlayer'
 import { resetAddStates } from '../composables/useAdd'
@@ -20,7 +20,7 @@ const { state } = useSearch()
 const authed = computed(() => useSession().state.status === 'authenticated')
 const searchRef = ref<InstanceType<typeof SearchPill> | null>(null)
 const source = ref('all')
-const picked = ref<string[]>(COPY.sourceNames.slice(0, 3))
+const picked = ref<string[]>([...COPY.defaultSources])
 const pickerOpen = ref(false)
 const draft = ref<string[]>([])
 const platsRef = ref<HTMLElement | null>(null)
@@ -160,6 +160,12 @@ onUnmounted(() => {
 watch(() => route.query.q, () => syncRouteQuery())
 watch(platsRef, () => { void nextTick(measurePlats) })
 watch(picked, () => { void nextTick(measurePlats) })
+watch(source, (name) => {
+  if (name !== 'all') void ensureSource(name)
+})
+watch(() => state.phase, (phase) => {
+  if (phase === 'results' && source.value !== 'all') void ensureSource(source.value)
+})
 </script>
 
 <template>
@@ -226,7 +232,7 @@ watch(picked, () => { void nextTick(measurePlats) })
       </div>
 
       <div class="scroll" :aria-label="A11Y.homeMain">
-        <ResultList :source="source" @pick="pickRecent" />
+        <ResultList :source="source" :sources="picked" @pick="pickRecent" />
       </div>
     </div>
 

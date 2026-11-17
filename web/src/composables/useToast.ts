@@ -6,6 +6,7 @@ export interface ToastItem {
   tone: 'success' | 'neutral' | 'error'
   /** 失败原因副标题（12px）；只取白名单映射后的中文，绝不透传后端原文 */
   detail: string
+  place: 'top' | 'bottom'
 }
 
 /** 内存队列：普通 4000ms / error 6000ms 自动出队；Toast 不抢焦点。 */
@@ -17,9 +18,10 @@ export function pushToast(
   text: string,
   tone: ToastItem['tone'] = 'neutral',
   detail = '',
+  place: ToastItem['place'] = 'bottom',
 ): void {
   const id = ++seq
-  state.items.push({ id, text, tone, detail })
+  state.items.push({ id, text, tone, detail, place })
   while (state.items.length > 2) {
     const oldest = state.items[0]
     if (oldest) dismissToast(oldest.id)

@@ -1,20 +1,52 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { COPY, fill } from '../copy/messages'
-import { useSearch } from '../composables/useSearch'
+import { useSearch, loadSourceMore } from '../composables/useSearch'
 import { groupTracks, sourceColor } from '../utils/group'
 import TrackRow from './TrackRow.vue'
+import type { Track } from '../api/types'
 
-const props = defineProps<{ source: string }>()
+const props = defineProps<{ source: string; sources: string[] }>()
 const emit = defineEmits<{ pick: [query: string] }>()
 const { state, retrySearch } = useSearch()
 const folded = ref<Record<string, boolean>>({})
+const shown = ref(10)
 
-const groups = computed(() => groupTracks(state.items, props.source))
+watch(() => props.source, () => { shown.value = 10 })
+watch(() => state.keyword, () => { shown.value = 10 })
+
+const capped = computed(() => capTracks(state.items, props.source, shown.value))
+const groups = computed(() => groupTracks(capped.value, props.source))
 const visibleCount = computed(() => groups.value.reduce((n, group) => n + group.rows.length, 0))
+const sourceCount = computed(() => state.items.filter((item) => item.source === props.source).length)
+const canMore = computed(() => props.source !== 'all' && (shown.value < sourceCount.value || state.more[props.source] === true))
+
+function capTracks(items: Track[], source: string, limit: number): Track[] {
+  const allowed = new Set(props.sources)
+  const pool = items.filter((item) => allowed.has(item.source))
+  if (source === 'all') {
+    const counts: Record<string, number> = {}
+    return pool.filter((item) => {
+      const count = counts[item.source] ?? 0
+      if (count >= 5) return false
+      counts[item.source] = count + 1
+      return true
+    })
+  }
+  return pool.filter((item) => item.source === source).slice(0, limit)
+}
 
 function toggle(id: string): void {
   folded.value[id] = !folded.value[id]
+}
+
+async function onMore(): Promise<void> {
+  if (props.source === 'all' || state.loadingMore) return
+  if (shown.value < sourceCount.value) shown.value = sourceCount.value
+  if (state.more[props.source]) {
+    await loadSourceMore(props.source)
+    shown.value = state.items.filter((item) => item.source === props.source).length
+  }
 }
 </script>
 
@@ -32,6 +64,11 @@ function toggle(id: string): void {
     </template>
 
     <template v-else-if="state.phase === 'results'">
+      <div v-if="visibleCount === 0" class="empty">
+        <div class="rings">∅</div>
+        <b>{{ COPY.sourceEmpty }}</b>
+      </div>
+      <template v-else>
       <p class="count">{{ COPY.found(visibleCount) }}</p>
       <div v-for="(group, index) in groups" :key="group.id" class="grp">
         <div class="grp-h">
@@ -50,6 +87,12 @@ function toggle(id: string): void {
           </div>
         </div>
       </div>
+      <div v-if="canMore" class="more">
+        <button type="button" class="more-btn" :disabled="state.loadingMore" @click="onMore">
+          {{ state.loadingMore ? COPY.loadMorePending : COPY.loadMore }}
+        </button>
+      </div>
+      </template>
     </template>
 
     <div v-else-if="state.phase === 'noResults'" class="empty">
@@ -115,6 +158,13 @@ function toggle(id: string): void {
   border: 1px solid var(--line-2); color: var(--t2); font-size: 12px; background: var(--bg-1);
 }
 .retry { margin-top: 14px; background: var(--acc); color: var(--on-acc); border-color: var(--acc); }
+.more { display: flex; justify-content: center; padding: 18px 0 8px; }
+.more-btn {
+  height: 34px; padding: 0 18px; border-radius: var(--r-pill);
+  border: 1px solid var(--acc); background: var(--acc-soft); color: var(--acc);
+  font-size: 12px; font-weight: 600;
+}
+.more-btn:disabled { opacity: .55; }
 .skeleton { display: grid; gap: 14px; padding-top: 18px; }
 .sk { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 12px; align-items: center; }
 .box, .lines i {

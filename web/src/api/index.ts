@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * 接口契约【草案 · 需与 Go 侧冻结】  TODO(go): 冻结后移除 mock 分支与 TODO 标记
+ * 接口契约。Go 服务实现同一组路径，字段与错误码按此冻结。
  * ----------------------------------------------------------------------------
  * 认证：网页登录用「口令 + HttpOnly Cookie」。
  *       前端只发 credentials:'same-origin'，★ 不设置任何认证请求头，
@@ -15,7 +15,9 @@
  * GET  /api/preview?sourceId=
  *      → 206 Partial Content + Accept-Ranges（由 Go 转发音频并支持 Range）
  *      ★ audio.src 只允许指向这里；浏览器不直连音乐源站。
- * POST /api/music      { sourceId }               → 200 { id } / 409 ADD_DUPLICATE
+ * POST /api/music/playable { sourceId, quality } → 200 { playable }
+ *      只回答所选音质能不能播，不返回地址。
+ * POST /api/music      { sourceId, quality }     → 200 { id } / 409 ADD_DUPLICATE
  *      ★ 添加只传 sourceId；name / author / cover 由 Go 复核，前端不重复提交。
  *      失败体 { code }，code 必须落在 copy/messages.ts 的白名单里。
  *
@@ -27,7 +29,7 @@
 import type { Track } from './types'
 import { pickTrack } from './types'
 import { isSessionInvalid, SESSION_INVALID_CODES } from '../copy/messages'
-import { MOCK_TRACKS, mockProbe, mockLogin, mockLogout, mockSearch, mockAdd } from './mock'
+import { MOCK_TRACKS, mockProbe, mockLogin, mockLogout, mockSearch, mockAdd, mockPlayable } from './mock'
 
 /** 错误只携带白名单码；message 固定为安全字符串，绝不携带后端原文或栈。 */
 export class ApiError extends Error {
@@ -140,11 +142,25 @@ export async function logout(): Promise<void> {
 
 /* ------------------------------- 搜索 ------------------------------- */
 
-export async function search(q: string, signal: AbortSignal): Promise<Track[]> {
-  if (USE_MOCK) return mockSearch(q, signal)
+export async function search(
+  q: string,
+  signal: AbortSignal,
+  page?: { source?: string; offset?: number; limit?: number },
+): Promise<Track[]> {
+  if (USE_MOCK) {
+    const items = await mockSearch(q, signal)
+    const filtered = page?.source ? items.filter((item) => item.source === page.source) : items
+    const offset = page?.offset ?? 0
+    const limit = page?.limit ?? filtered.length
+    return filtered.slice(offset, offset + limit)
+  }
+  const params = new URLSearchParams({ q })
+  if (page?.source) params.set('source', page.source)
+  if (page?.offset) params.set('offset', String(page.offset))
+  if (page?.limit) params.set('limit', String(page.limit))
   let res: Response
   try {
-    res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
+    res = await fetch(`/api/search?${params.toString()}`, {
       credentials: 'same-origin',
       signal,
     })
@@ -182,8 +198,43 @@ export function previewUrl(sourceId: string): string {
 
 /* ------------------------------- 添加 ------------------------------- */
 
+/** 添加前确认所选音质能否播放。失败抛 ApiError；不能播返回 false。 */
+export async function probePlayable(
+  sourceId: string,
+  quality: 'std' | 'hi' | 'hr',
+  signal?: AbortSignal,
+): Promise<boolean> {
+  if (USE_MOCK) return mockPlayable(sourceId)
+  let res: Response
+  try {
+    res = await fetch('/api/music/playable', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceId, quality }),
+      signal,
+    })
+  } catch (err) {
+    if (signal?.aborted) throw err
+    throw new ApiError('NETWORK_ERROR')
+  }
+  if (!res.ok) {
+    const raw = await readCode(res)
+    throw new ApiError(normalizeAddCode(res.status, raw))
+  }
+  try {
+    const body: unknown = await res.json()
+    if (typeof body === 'object' && body !== null) {
+      return (body as { playable?: unknown }).playable === true
+    }
+  } catch {
+    return false
+  }
+  return false
+}
+
 /** 只传 sourceId；返回成功或抛 ApiError(白名单码 / ADD_DUPLICATE) */
-export async function addTrack(sourceId: string): Promise<void> {
+export async function addTrack(sourceId: string, quality: 'std' | 'hi' | 'hr'): Promise<void> {
   if (USE_MOCK) {
     const outcome = await mockAdd(sourceId)
     if (outcome !== 'OK') throw new ApiError(outcome)
@@ -195,7 +246,7 @@ export async function addTrack(sourceId: string): Promise<void> {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sourceId }),
+      body: JSON.stringify({ sourceId, quality }),
     })
   } catch {
     throw new ApiError('NETWORK_ERROR')

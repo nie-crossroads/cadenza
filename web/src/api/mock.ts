@@ -60,6 +60,11 @@ export async function mockSearch(q: string, signal: AbortSignal): Promise<Track[
   )
 }
 
+export async function mockPlayable(sourceId: string): Promise<boolean> {
+  await wait(280)
+  return !sourceId.endsWith('-fail')
+}
+
 export async function mockAdd(sourceId: string): Promise<string> {
   await wait(900)
   if (sourceId.endsWith('-dup')) return 'ADD_DUPLICATE'

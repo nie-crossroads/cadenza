@@ -6,8 +6,7 @@ import { sourceColor } from '../utils/group'
 import { coverGradient, formatTime } from '../utils/format'
 import { A11Y, COPY, qualityLabel } from '../copy/messages'
 import { usePlayer, toggleAudition } from '../composables/usePlayer'
-import { getAddState, add, retry } from '../composables/useAdd'
-import { confirmAdd } from '../composables/useConfirm'
+import { getAddState, requestAdd } from '../composables/useAdd'
 import { useSession } from '../composables/useSession'
 
 const props = defineProps<{ row: RowModel }>()
@@ -21,6 +20,13 @@ const currentId = computed(() => player.track?.sourceId ?? '')
 function playing(track: Track): boolean {
   return currentId.value === track.sourceId && player.status !== 'empty'
 }
+function liveText(track: Track): string {
+  if (currentId.value !== track.sourceId) return ''
+  if (player.status === 'buffering') return COPY.statusBuffering
+  if (player.status === 'playing') return COPY.auditioning
+  if (player.status === 'error') return COPY.statusError
+  return ''
+}
 function mark(name: string): string {
   return Array.from(name.trim())[0] || '♪'
 }
@@ -30,12 +36,7 @@ function tone(code: string): string {
   return ''
 }
 async function onAdd(track: Track): Promise<void> {
-  const phase = getAddState(track.sourceId).phase
-  if (phase === 'pending' || phase === 'success' || phase === 'duplicate') return
-  const ok = await confirmAdd(track.name)
-  if (!ok) return
-  if (phase === 'error') retry(track)
-  else void add(track)
+  await requestAdd(track)
 }
 </script>
 
@@ -61,11 +62,11 @@ async function onAdd(track: Track): Promise<void> {
           <span v-else class="name">{{ row.primary.name }}</span>
           <span v-if="merged" class="tag">{{ COPY.mergedTag }}</span>
           <span v-else class="q desk-q" :class="tone(row.primary.quality)">{{ qualityLabel(row.primary.quality) }}</span>
-          <span v-if="!merged && playing(row.primary)" class="live desk-live">{{ COPY.auditioning }}</span>
+          <span v-if="!merged && liveText(row.primary)" class="live desk-live">{{ liveText(row.primary) }}</span>
         </div>
         <div class="sub">
           <span v-if="!merged" class="q phone-q" :class="tone(row.primary.quality)">{{ qualityLabel(row.primary.quality) }}</span>
-          <span v-if="!merged && playing(row.primary)" class="live phone-live">{{ COPY.auditioning }}</span>
+          <span v-if="!merged && liveText(row.primary)" class="live phone-live">{{ liveText(row.primary) }}</span>
           <span class="author">{{ row.primary.author }}</span>
           <span v-if="merged" class="quiet">{{ row.variants.length }} 个来源</span>
           <span v-else class="phone-dur tabular">{{ formatTime(row.primary.duration) }}</span>
@@ -132,7 +133,7 @@ async function onAdd(track: Track): Promise<void> {
             <i class="dot" :style="{ background: sourceColor(track.source) }" />
             {{ track.source }}
             <span class="q" :class="tone(track.quality)">{{ qualityLabel(track.quality) }}</span>
-            <span v-if="playing(track)" class="live">{{ COPY.auditioning }}</span>
+            <span v-if="liveText(track)" class="live">{{ liveText(track) }}</span>
           </button>
           <span class="tabular quiet">{{ formatTime(track.duration) }}</span>
           <div class="tail">

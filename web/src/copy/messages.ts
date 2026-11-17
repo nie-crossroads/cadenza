@@ -49,6 +49,7 @@ export const COPY = {
   sourcePickOk: '确定',
   sourcePickCancel: '取消',
   sourceNames: ['网易', 'ＱＱ', '酷狗', '酷我', '千千', '一听', '咪咕'],
+  defaultSources: ['网易', 'ＱＱ', '酷狗'],
   loggedIn: '已登录',
   logout: '退出',
   groupFold: '收起',
@@ -72,11 +73,16 @@ export const COPY = {
   found: (n: number): string => `找到 ${n} 首歌曲`,
   searchFailedTitle: '搜索失败',
   searchFailedSub: '网络连接失败，请检查网络后重试',
+  loadMore: '加载更多',
+  loadMorePending: '加载中…',
+  sourceEmpty: '这个来源没有歌曲',
   retry: '重试',
 
   /* 试听 / 播放条 */
   previewEmpty: '还没有试听的歌曲',
   previewFailed: '试听失败，点击重试',
+  previewToast: (name: string): string => `「${name}」暂时不能试听`,
+  previewToastDetail: '这个来源没有提供可播放的地址',
   rangeNotice: '当前不支持拖动进度',
   statusIdle: '试听',
   auditioning: '试听中',
@@ -90,8 +96,16 @@ export const COPY = {
 
   /* 添加五态 */
   addIdle: '添加',
+  addQualityTitle: '选择音质',
+  addQualityHint: (name: string): string => `为「${name}」选择要保存的音质`,
+  addQualityNext: '下一步',
+  addPlayableTitle: '检查音质',
+  addPlayableChecking: '正在确认所选音质能否播放',
+  addUnplayableTitle: '无法添加',
+  addUnplayableBody: '该歌曲无法播放，不能添加到网站中',
+  addUnplayableOk: '知道了',
   addConfirmTitle: '确认添加',
-  addConfirmBody: (name: string): string => `把「${name}」添加到博客？`,
+  addConfirmBody: (name: string, tone: string): string => `把「${name}」以${tone}添加到博客？`,
   addConfirmOk: '确认添加',
   addConfirmCancel: '取消',
   addPending: '添加中…',
@@ -149,6 +163,13 @@ export function qualityLabel(code: string): string {
   if (code === 'hi') return COPY.qualityHi
   if (code === 'hr') return COPY.qualityHr
   return COPY.qualityStd
+}
+
+/** 添加时可选的档位：不超过这首歌标出的最高音质。 */
+export function qualityChoices(code: string): Array<'std' | 'hi' | 'hr'> {
+  if (code === 'hr') return ['std', 'hi', 'hr']
+  if (code === 'hi') return ['std', 'hi']
+  return ['std']
 }
 
 /** 模板占位符替换（只用白名单模板，不拼接后端字符串） */
