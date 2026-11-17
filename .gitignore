@@ -1,0 +1,33 @@
+# 密钥与本地配置
+.env
+.env.*
+!.env.example
+*.local.yml
+application-local.yml
+
+# Node / Vite
+web/node_modules/
+web/dist/
+
+# Go
+/bin/
+/cadenza
+/cadenza.exe
+*.exe
+*.test
+*.out
+coverage.out
+vendor/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.cursor/
+*.swp
+*.swo
+
+# 本地设计稿与代理笔记，暂不进仓库
+design/
+.workbuddy/

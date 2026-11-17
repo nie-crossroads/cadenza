@@ -1,0 +1,42 @@
+#!/bin/sh
+# Contributors 只保留 git config 里的作者，去掉 agent 署名。
+set -e
+
+msg_file=$1
+tmp="${msg_file}.clean"
+
+grep -Eiv 'cursoragent|workbuddyagent|cursor agent|workbuddy agent' "$msg_file" \
+  | grep -Eiv '^[[:space:]]*(Co-authored-by|Made-with|Generated-by):' > "$tmp" || true
+mv "$tmp" "$msg_file"
+
+reject_agent() {
+  printf '%s' "$1" | grep -Eqi 'cursor|workbuddy' || return 0
+  echo "拒绝提交：author/committer 只能是 Git 配置中的作者，不能是 agent。" >&2
+  exit 1
+}
+
+author_ident=$(git var GIT_AUTHOR_IDENT 2>/dev/null || true)
+committer_ident=$(git var GIT_COMMITTER_IDENT 2>/dev/null || true)
+reject_agent "$author_ident"
+reject_agent "$committer_ident"
+
+name=$(git config user.name || true)
+email=$(git config user.email || true)
+if [ -n "$name" ] && [ -n "$email" ]; then
+  case "$author_ident" in
+    "$name <$email>"*) ;;
+    *)
+      echo "拒绝提交：author 必须是 ${name} <${email}>。" >&2
+      exit 1
+      ;;
+  esac
+  case "$committer_ident" in
+    "$name <$email>"*) ;;
+    *)
+      echo "拒绝提交：committer 必须是 ${name} <${email}>。" >&2
+      exit 1
+      ;;
+  esac
+fi
+
+exit 0
