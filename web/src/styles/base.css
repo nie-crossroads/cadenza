@@ -1,0 +1,106 @@
+/* ============================================================
+   Cadenza 全局基类：reset / 焦点环 / 屏幕阅读器 / reduced-motion
+   组件样式一律写在各自 SFC 的 <style scoped> 内。
+   ============================================================ */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html,
+body,
+#app { min-height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--t1);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100dvh;
+}
+
+h1, h2, h3, h4, p, ul, ol, figure { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+
+button,
+input { font: inherit; color: inherit; }
+
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled { cursor: not-allowed; }
+a { color: inherit; }
+img, svg { display: block; }
+svg { flex: none; }
+
+/* Phase 1 定稿焦点环：1px 琥珀边 + 3px 琥珀柔光环，仅 :focus-visible。
+   容器型控件（搜索框 / 口令框）由各自 :focus-within 提供同一套视觉。 */
+:focus { outline: none; }
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+/* tabindex=-1 的主容器接收程序化焦点时不显示焦点环 */
+[tabindex="-1"]:focus { outline: none; }
+[tabindex="-1"]:focus-visible { outline: none; }
+
+/* 屏幕阅读器专用文本：内容始终保留在 DOM 与 a11y 树里 */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 时间码 / 时长：等宽数字，避免跳动 */
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* 装饰层通用约束：不可聚焦、不拦截指针、不进 a11y 树 */
+.decor {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* A6 噪点：纯 CSS 极淡径向颗粒，纯装饰层；手机端由 --noise-display 关闭。
+   ★ EQ 呼吸灯属于状态层，不放进 .noise / .decor / aria-hidden 容器。 */
+.noise {
+  position: fixed;
+  inset: 0;
+  /* 负层级：只叠在 canvas 背景之上、所有内容之下，不参与文字对比度 */
+  z-index: -1;
+  display: var(--noise-display);
+  background-image: radial-gradient(rgba(255, 255, 255, .035) .5px, transparent .5px);
+  background-size: 4px 4px;
+  opacity: .5;
+  pointer-events: none;
+}
+
+/* reduced-motion：只停动画（含黑胶旋转 / 波形律动 / 骨架扫光），
+   状态文本、静态图标与 aria 属性由组件始终渲染，绝不依赖动画表达。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    animation-play-state: paused !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

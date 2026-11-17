@@ -1,0 +1,98 @@
+/* 设计稿 cadenza-design.html 的色板。组件只引用这里的变量。 */
+
+:root {
+  color-scheme: dark;
+  --hue: 194;
+  --bg: oklch(0.12 0.012 var(--hue));
+  --bg-1: oklch(0.155 0.016 var(--hue));
+  --surface: oklch(0.19 0.02 var(--hue));
+  --surface-2: oklch(0.225 0.022 var(--hue));
+  --surface-3: oklch(0.27 0.024 var(--hue));
+  --line: oklch(0.32 0.02 var(--hue));
+  --line-2: oklch(0.42 0.028 var(--hue));
+  --line-3: oklch(0.52 0.03 var(--hue));
+  --t1: oklch(0.94 0.012 var(--hue));
+  --t2: oklch(0.78 0.02 var(--hue));
+  --t3: oklch(0.64 0.022 var(--hue));
+  --t4: oklch(0.52 0.02 var(--hue));
+  --acc: #5AC8E8;
+  --acc-2: #9B8CFF;
+  --acc-soft: color-mix(in srgb, var(--acc) 14%, transparent);
+  --on-acc: #04161C;
+  --ok: #5FD6A4;
+  --ok-soft: rgba(95, 214, 164, .12);
+  --warn: #E8B45F;
+  --warn-soft: rgba(232, 180, 95, .12);
+  --err: #F4736F;
+  --err-soft: rgba(244, 115, 111, .12);
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Georgia, "Songti SC", "Noto Serif SC", serif;
+  --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  --r-s: 6px;
+  --r-m: 10px;
+  --r-l: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+  --ease: cubic-bezier(.22, .61, .36, 1);
+  --staff: color-mix(in srgb, var(--acc) 10%, transparent);
+  --color-selection-bar: linear-gradient(
+    to right,
+    oklch(0.7 0.1 0), oklch(0.7 0.1 60), oklch(0.7 0.1 120),
+    oklch(0.7 0.1 180), oklch(0.7 0.1 240), oklch(0.7 0.1 300), oklch(0.7 0.1 360)
+  );
+  --content-max: 1200px;
+  --lane: min(var(--content-max), calc(100% - 48px));
+  --header-h: 62px;
+  --player-h: 76px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --toast-bottom: calc(var(--player-h) + var(--safe-bottom) + 16px);
+  --toast-width: min(420px, calc(100% - 32px));
+
+  /* 旧组件仍引用的别名，避免未改到的样式丢色 */
+  --bg-base: var(--bg);
+  --text-primary: var(--t1);
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+  --fs-body: 14px;
+  --accent: var(--acc);
+  --accent-ring: color-mix(in srgb, var(--acc) 22%, transparent);
+  --noise-display: none;
+}
+
+html.light {
+  color-scheme: light;
+  --bg: oklch(0.97 0.008 var(--hue));
+  --bg-1: oklch(0.95 0.012 var(--hue));
+  --surface: oklch(0.995 0.004 var(--hue));
+  --surface-2: oklch(0.94 0.016 var(--hue));
+  --surface-3: oklch(0.9 0.02 var(--hue));
+  --line: oklch(0.86 0.014 var(--hue));
+  --line-2: oklch(0.76 0.022 var(--hue));
+  --line-3: oklch(0.64 0.028 var(--hue));
+  --t1: oklch(0.24 0.02 var(--hue));
+  --t2: oklch(0.38 0.02 var(--hue));
+  --t3: oklch(0.46 0.02 var(--hue));
+  --t4: oklch(0.55 0.018 var(--hue));
+  --color-selection-bar: linear-gradient(
+    to right,
+    oklch(0.8 0.1 0), oklch(0.8 0.1 60), oklch(0.8 0.1 120),
+    oklch(0.8 0.1 180), oklch(0.8 0.1 240), oklch(0.8 0.1 300), oklch(0.8 0.1 360)
+  );
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --header-h: 56px;
+    --player-h: 72px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --header-h: 52px;
+    --player-h: calc(58px + 10px + var(--safe-bottom));
+    --toast-bottom: calc(var(--player-h) + 8px);
+    --toast-width: calc(100% - 24px);
+    --lane: min(var(--content-max), calc(100% - 24px));
+  }
+}

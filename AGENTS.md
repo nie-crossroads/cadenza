@@ -41,7 +41,7 @@ REST 和 MCP 不带播放器。
 
 文案和错误码白名单集中在 `web/src/copy/messages.ts`。页面只渲染这里的中文，不渲染后端 `message` 原文。错误码本身不进 DOM、属性、Toast、标题或日志。
 
-`Track` 只有六项：`name`、`author`、`cover`、`duration`、`source`、`sourceId`。`sourceId` 只留在内存和 `data-source-id`，不显示成文本，不进 URL。
+`Track` 有 `name`、`author`、`cover`、`duration`、`source`、`sourceId`、`quality`。`quality` 只取 `hi` / `std` / `hr`，页面映射成高品、标准、Hi-Res。`sourceId` 只留在内存和 `data-source-id`，不显示成文本，不进 URL。
 
 添加按钮按行维护状态。`409` 表示已存在，只提示这一行。只有会话失效才退出登录；博客侧鉴权失败算这一行添加失败。
 
